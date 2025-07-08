@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "NeteaseCloudMusicApi": "^4.27.0",
-    "simple-web23": "^0.0.26"
+    "axios": "^1.6.0",
+    "axios-retry": "^4.5.0"
   }
 }
