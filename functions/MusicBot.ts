@@ -17,9 +17,9 @@ export class MusicBot {
     constructor(
         weatherApiKey = 'dedf75857d4f47f4a2973415250307',
         weatherCity = 'Shanghai',
-        greetingDir = 'greetings',
-        historyFile = 'history.json',
-        webhookPlaylistsFile = 'webhook_playlists.json'
+        greetingDir = 'config/greetings',
+        historyFile = 'cache/history.json',
+        webhookPlaylistsFile = 'config/webhook_playlists.json'
     ) {
         this.weatherService = new WeatherService(weatherApiKey, weatherCity);
         this.musicService = new NeteaseMusicService();
@@ -50,7 +50,7 @@ export class MusicBot {
     private getPlaylistCacheFile(webhook: string): string {
         // 以 webhook 的 hash 作为文件名，防止特殊字符
         const hash = Buffer.from(webhook).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
-        return `playlists_cache_${hash}.json`;
+        return `cache/playlists_cache_${hash}.json`;
     }
 
     // 主推送方法：每个 webhook 独立推送
@@ -216,6 +216,19 @@ export class MusicBot {
             }
             const isFridayNight = timeType === 'night' && nextRun.getDay() === 5;
             await this.sendToFeishu(timeType, isFridayNight);
+        }
+    }
+
+    public async clearCache(): Promise<void> {
+        // 清除天气缓存
+        const fs = require('fs');
+        if (fs.existsSync('cache/weather_cache.json')) fs.unlinkSync('cache/weather_cache.json');
+        // 清除历史缓存
+        if (fs.existsSync('cache/history.json')) fs.unlinkSync('cache/history.json');
+        // 清除歌单缓存
+        const cacheFiles = fs.readdirSync('cache').filter((f: string) => f.startsWith('playlists_cache_') && f.endsWith('.json'));
+        for (const file of cacheFiles) {
+            fs.unlinkSync(`cache/${file}`);
         }
     }
 

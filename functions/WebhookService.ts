@@ -4,7 +4,7 @@ import * as fs from 'fs';
 export class WebhookService {
     private webhookPlaylistsFile: string;
 
-    constructor(webhookPlaylistsFile = 'webhook_playlists.json') {
+    constructor(webhookPlaylistsFile = 'config/webhook_playlists.json') {
         this.webhookPlaylistsFile = webhookPlaylistsFile;
     }
 

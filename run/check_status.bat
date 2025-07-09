@@ -4,6 +4,7 @@ echo 🎵 网易云音乐定时推送服务状态检查
 echo ==================================
 
 REM 检查进程状态
+cd ..
 tasklist | findstr /I "tsx.exe" | findstr /I "watch index.ts" >nul
 if %errorlevel%==0 (
     echo ✅ 服务正在运行

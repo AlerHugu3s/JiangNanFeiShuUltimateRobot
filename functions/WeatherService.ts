@@ -9,7 +9,7 @@ export interface WeatherInfo {
 }
 
 export class WeatherService {
-    private cacheFile = 'weather_cache.json';
+    private cacheFile = 'cache/weather_cache.json';
     private apiKey: string;
     private city: string;
     private conditionMap = [

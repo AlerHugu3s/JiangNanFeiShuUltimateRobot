@@ -1,4 +1,5 @@
 @echo off
 chcp 65001 >nul
-pnpm start
+cd ..
+pnpm start start
 pause 
