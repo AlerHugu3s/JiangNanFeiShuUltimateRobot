@@ -104,3 +104,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
+
+history.json
+weather_cache.json
+playlists_cache_*.json
