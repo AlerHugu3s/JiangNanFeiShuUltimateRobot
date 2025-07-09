@@ -78,6 +78,12 @@ async function main() {
             nextRun = new Date(tomorrow.getTime() + hour * 60 * 60 * 1000 + minute * 60 * 1000);
           }
           console.log(`[定时提醒] 下次推送时间：${nextRun.toLocaleString()}`);
+          // 计算剩余时间
+          const msLeft = nextRun.getTime() - now.getTime();
+          const hours = Math.floor(msLeft / (1000 * 60 * 60));
+          const minutes = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((msLeft % (1000 * 60)) / 1000);
+          console.log(`[定时提醒] 距离下次推送还有：${hours}小时${minutes}分${seconds}秒`);
           await new Promise(r => setTimeout(r, logIntervalMinutes * 60 * 1000));
         }
       }
