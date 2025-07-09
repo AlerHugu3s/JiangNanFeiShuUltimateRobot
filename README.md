@@ -1,597 +1,157 @@
-# 简单 WEB 后端框架
+# 网易云音乐飞书定时推送机器人
 
-仓库地址：[simple-web](https://github.com/HUAHUAI23/simple-web)
+## 项目简介
 
-一个轻量级的 **函数编程式 Web 服务框架**，支持 **函数式** 编写后端接口，内置 WebSocket、XML 解析、CORS 等特性，方便 **小程序，函数计算，腾讯云开发用户** 快速进行后端服务开发。方便集成到各种公有云平台，容器平台，进行各种 **插件式开发，敏捷开发**。
+本项目是一个基于 TypeScript 的飞书群机器人，支持定时向多个群聊推送网易云音乐歌单中的随机歌曲，并结合天气和祝福语生成美化的卡片消息。支持多 webhook、多歌单、历史去重、天气预报、节假日祝福等功能，适合团队、兴趣群每日音乐推荐。
 
-- [sealos 操作系统 公有云环境](https://gzg.sealos.run)
-- [sealos devbox 快速开发](https://gzg.sealos.run/?openapp=system-devbox)
-- [sealos 云开发](https://gzg.sealos.run/?openapp=system-sealaf)
+---
 
-## 🌟 核心特性
+## 依赖与环境要求
 
-- **零配置开发** - 快速启动项目，无需繁琐配置
-- **自动路由生成** - 基于文件系统的路由组织方式
-- **函数式编程** - 直观的接口编写方式
-- **丰富的内置功能**
-  - WebSocket 支持
-  - XML 解析能力
-  - CORS 配置
-  - 函数缓存
-  - 可配置日志级别
-  - Express.js 扩展能力
+- Node.js 16+
+- pnpm（推荐）
+- 需本地或远程可用的 NeteaseCloudMusicApi 服务
+- 可选：WeatherAPI.com 免费 API Key
 
-## 🚀 快速开始
+安装依赖：
 
-> 第一个 hello world 接口
+```bash
+pnpm install
+```
 
-### 环境要求
+---
 
-- Node.js >= 22.0.0
-- pnpm（推荐的包管理工具）
+## 配置说明
 
-### 安装
+### 1. webhook_playlists.json
 
-`package.json`:
+配置每个 webhook 绑定的歌单 ID 列表（支持多个 webhook、多个歌单）：
 
 ```json
 {
-  "name": "simple-web",
-  "version": "1.0.0",
-  "description": "",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --exec tsx watch index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "clean": "rimraf dist",
-    "build:clean": "pnpm clean && pnpm build",
-    "typecheck": "tsc --noEmit",
-    "start:prod": "cross-env NODE_ENV=production node dist/index.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^22.8.1",
-    "nodemon": "^3.1.7",
-    "rimraf": "^6.0.1",
-    "tslib": "^2.8.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
-  },
-  "dependencies": {
-    "simple-web23": "^0.0.25"
-  }
+  "https://open.feishu.cn/open-apis/bot/v2/hook/xxx": [
+    "123456789",
+    "987654321"
+  ],
+  "https://open.feishu.cn/open-apis/bot/v2/hook/yyy": [
+    "222222222"
+  ]
 }
 ```
 
-tsconfig.json:
+### 2. greetings/ 目录
 
-```json
-{
-    "compileOnSave": true,
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "moduleDetection": "auto",
-        "removeComments": true,
-        "lib": [
-            "ESNext"
-        ],
-        "outDir": "dist",
-        "rootDir": ".",
-        "baseUrl": ".",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "importHelpers": true,
-        "composite": true,
-    },
-    "include": [
-        "**/*",
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
-}
+存放祝福语文本文件，每种类型一份（每行为一句，随机抽取）：
+
+- morning.txt 早安
+- noon.txt 午安
+- night.txt 晚安
+- holiday.txt 节假日
+- 其他如 sunny.txt、rain.txt、snow.txt、cloudy.txt、overcast.txt、wind.txt、fog.txt、haze.txt、thunder.txt、sandstorm.txt、sleet.txt、other.txt
+
+### 3. history.json
+
+自动生成，记录已推送过的歌曲 ID，防止重复推荐。
+
+### 4. weather_cache.json
+
+自动生成，缓存天气数据，减少 API 请求。
+
+### 5. 依赖的环境变量（可选）
+
+- WEATHER_API_KEY：天气 API Key（默认已内置测试 key）
+- WEATHER_CITY：天气城市（默认 Shanghai）
+
+---
+
+## 主要功能
+
+- **多 webhook 支持**：每个 webhook 可绑定多个歌单，独立推送。
+- **定时推送**：工作日每天三次（10:00、13:00、19:00），自动跳过周末。
+- **节假日祝福**：周五晚推送节假日祝福。
+- **天气集成**：晚安推送附带明日天气和 emoji。
+- **历史去重**：每个 webhook 独立历史，避免重复推荐。
+- **美化卡片**：飞书交互式卡片，含歌名、歌手、歌单、天气、祝福语、直达链接。
+- **缓存优化**：歌单和天气均有本地缓存，减少 API 压力。
+- **命令行灵活调用**：支持多种推送类型和测试命令。
+
+---
+
+## 使用方法
+
+### 1. 命令行用法
+
+```bash
+pnpm start morning      # 发送早安推送
+pnpm start noon         # 发送午安推送
+pnpm start night        # 发送晚安推送（含天气）
+pnpm start holiday      # 发送节假日推送（周五晚）
+pnpm start test-all     # 测试所有推送类型
+pnpm start start        # 启动主循环（定时推送，推荐生产环境用）
 ```
 
-`nodemon.json`:
-
-```json
-{
-    "watch": [
-        "functions/",
-        ".env"
-    ],
-    "ignore": [
-        "*.test.js",
-        "*.spec.js",
-        "*.test.ts",
-        "*.spec.ts",
-        "node_modules/",
-        "dist"
-    ],
-    "ext": "ts,js,json,yaml,yml",
-    "exec": "tsx watch index.ts",
-    "delay": "1000",
-    "env": {
-        "NODE_ENV": "development"
-    }
-}
-```
-
-下面的示例，项目根目录均为 `demo` 在项目根目录下添加上面三个文件 package.json 、tsconfig.json 和 nodemon.json，然后执行 `pnpm install simple-web` 安装依赖, 如果没有安装 pnpm 请先安装 pnpm，`npm install -g pnpm`
-
-项目结构示例
-
-```plain
-demo
-├── index.ts
-├── package.json
-├── tsconfig.json
-├── nodemon.json
-```
-
-### 使用
-
-下面给出入口文件为 `index.ts` ，在 `index.ts` 中引入 SimpleWeb 并启动服务的示例。
-
-`demo/index.ts`
+### 2. 代码调用
 
 ```typescript
-import { SimpleWeb, SimpleWebConfig } from 'simple-web23'
+import { MusicBot } from './functions/MusicBot';
 
-const config: SimpleWebConfig = {
-    port: 3000,
-    logLevel: 'debug',
-    isProd: process.env.NODE_ENV === 'production',
-    requestLimitSize: '100mb'
-}
-
-const app = new SimpleWeb(config)
-app.start()
+const bot = new MusicBot();
+await bot.sendToFeishu('morning');
+await bot.sendToFeishu('night', true); // 节假日模式
+await bot.testAll();
+await bot.startMainLoop(); // 永久定时主循环
 ```
 
-启动项目，在项目根目录下执行 `pnpm dev`
+---
 
-默认服务监听端口为 `2342`，默认在根目录中生成 `functions` 目录，所有 **接口函数** 必须都写在这个目录下，只有该目录下的函数才会被注册为路由。
+## 主要类与方法说明
 
-simple web 框架的路由组织方式为文件系统组织方式，例如 `functions/hello.ts` 对应的路由为 `/hello` ，`functions/user/info.ts` 对应的路由为 `/user/info`
+### MusicBot
 
-访问每个接口时，默认执行 `default` 函数，因此需要定义默认导出函数 `export default async function` 或者 `export default function`
+- `constructor(weatherApiKey, weatherCity, greetingDir, historyFile, webhookPlaylistsFile)`
+- `sendToFeishu(timeType: string, isFridayNight = false)`  
+  推送指定类型（morning/noon/night/holiday）消息到所有 webhook。
+- `testAll()`  
+  依次推送所有类型，便于测试。
+- `startMainLoop()`  
+  启动定时主循环，自动在工作日三次推送。
+- `getNextRunTime(now, targets)`  
+  计算下次推送时间点。
 
-开始第一个 hello 接口
+### 其他服务类
 
-`functions/hello.ts`
+- `NeteaseMusicService`：负责歌单拉取、缓存、随机选曲。
+- `WeatherService`：负责天气拉取、缓存、emoji 匹配。
+- `GreetingService`：负责祝福语文件读取、随机抽取。
+- `HistoryService`：负责历史记录的读写。
+- `WebhookService`：负责 webhook 配置加载与消息推送。
 
-```typescript
-import type { FunctionContext } from 'simple-web23'
+---
 
-export default async function (ctx: FunctionContext) {
-    return {
-        data: 'hello'
-    }
-}
-```
+## 进阶说明
 
-```plain
-demo
-├── functions
-│   ├── hello.ts
-├── index.ts
-├── package.json
-├── tsconfig.json
-├── nodemon.json
-```
+- **多 webhook 多歌单**：每个 webhook 可配置多个歌单，推送时随机选取未推送过的歌曲。
+- **缓存机制**：歌单缓存每日自动刷新，天气缓存提前 5 分钟预取。
+- **异常处理**：如所有歌曲已推送过，会自动清空历史重试。
+- **主循环跳过周末**：自动检测周末，跳到下周一早上继续推送。
+- **推送内容**：卡片内容包含祝福语、歌曲信息、天气（晚安）、直达网易云链接。
 
-在项目根目录运行项目，`pnpm dev` 后,访问 `http://localhost:2342/hello`， 可以利用 curl 工具模拟访问 `curl http://localhost:2342/hello`，可以看到数据返回
+---
 
-```json
-{
-    "data": "hello world"
-}
-```
+## 故障排查
 
-### 📚进阶指南
+- 推送失败：请检查 webhook 地址、网络连通性、歌单 ID 是否有效。
+- 歌单为空：请确保歌单有歌曲且 API 可用。
+- 天气获取失败：请检查 WeatherAPI Key 是否有效，或更换城市。
+- 祝福语为空：请确保 greetings/ 目录下有对应类型的 txt 文件。
 
-simple web 框架使用 mongo 数据库，s3 对象存储，请看 [跳到更多示例](#更多示例)
-获取 simple web 框架的函数上下文，配置项，请看 [跳到函数上下文](#simple-web-框架函数上下文)
+---
 
-## simple web 框架函数上下文
+## 贡献与定制
 
-接口函数的默认导出函数为 `default` 函数，`default` 函数接收一个 `FunctionContext` 参数，`FunctionContext` 为 simple web 框架的函数上下文，包含以下属性：
+- 欢迎自定义推送时间、祝福语、歌单等。
+- 支持扩展更多推送类型和消息格式。
 
-### FunctionContext 属性说明
+---
 
-- `files`: 上传文件信息
-  - 类型: `{ [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[] | undefined`
-  - 说明: 包含通过表单上传的文件信息
-
-- `headers`: 请求头信息
-  - 类型: `Request['headers']`
-  - 说明: HTTP 请求头部信息
-
-- `query`: URL 查询参数
-  - 类型: `Request['query']`
-  - 说明: URL 中的查询字符串参数
-
-- `body`: 请求体数据
-  - 类型: `Request['body']`
-  - 说明: HTTP 请求体中的数据
-
-- `params`: 路由参数
-  - 类型: `Request['params']`
-  - 说明: URL 路径中的动态参数
-
-- `method`: 请求方法
-  - 类型: `Request['method']`
-  - 说明: HTTP 请求方法（GET、POST 等）
-
-- `webSocket`: WebSocket 连接对象
-  - 类型: `WebSocket`
-  - 说明: WebSocket 连接实例（仅在 WebSocket 连接时可用）
-
-- `request`: 原始请求对象
-  - 类型: `Request`
-  - 说明: Express 原始请求对象
-
-- `response`: 原始响应对象
-  - 类型: `Response`
-  - 说明: Express 原始响应对象
-
-- `__function_name`: 函数名称
-  - 类型: `string`
-  - 说明: 当前执行的函数名称
-
-- `requestId`: 请求 ID
-  - 类型: `string`
-  - 说明: 用于追踪请求的唯一标识符
-
-- `url`: 请求 URL
-  - 类型: `string`
-  - 说明: 完整的请求 URL
-
-#### 使用示例 FunctionContext 示例
-
-```typescript
-import type { FunctionContext } from 'simple-web23'
-
-export default async function (ctx: FunctionContext) {
-    // 获取查询参数
-    const { name } = ctx.query
-
-    // 获取请求头
-    const userAgent = ctx.headers['user-agent']
-
-    // 获取请求体数据
-    const { data } = ctx.body
-
-    return {
-        name,
-        userAgent,
-        data,
-        requestId: ctx.requestId
-    }
-}
-```
-
-#### 使用原始 Response 对象示例
-
-如果需要更细粒度的控制响应，可以直接使用 `ctx.response` 对象：
-
-```typescript
-import type { FunctionContext } from 'simple-web23'
-
-export default async function (ctx: FunctionContext) {
-    // 使用原始 response 对象设置状态码和发送响应
-    ctx.response
-        .status(201)
-        .send({
-            message: 'Created successfully',
-            timestamp: new Date().toISOString()
-        })
-}
-```
-
-这种方式让你可以：
-
-- 直接设置 HTTP 状态码
-- 自定义响应头
-- 控制响应格式
-- 流式传输数据
-- 使用其他 Express Response 对象的方法
-
-### 接口函数全局上下文
-
-```typescript
-export interface FunctionModuleGlobalContext {
-    __filename: string;
-    module: Module;
-    exports: Module['exports'];
-    console: Console;
-    __require: typeof FunctionModule.functionsImport;
-    RegExp: typeof RegExp;
-    Buffer: typeof Buffer;
-    Float32Array: typeof Float32Array;
-    setInterval: typeof setInterval;
-    clearInterval: typeof clearInterval;
-    setTimeout: typeof setTimeout;
-    clearTimeout: typeof clearTimeout;
-    setImmediate: typeof setImmediate;
-    clearImmediate: typeof clearImmediate;
-    Promise: typeof Promise;
-    process: typeof process;
-    URL: typeof URL;
-    fetch: typeof fetch;
-    global: unknown;
-    __from_modules: string[];
-}
-```
-
-```typescript
-import type { FunctionModuleGlobalContext } from 'simple-web23'
-```
-
-接口函数的全局上下文可以通过 `global` 对象访问，例如 `global.__filename` 可以获取当前接口函数文件路径
-
-## simple web 框架配置项
-
-### 配置项
-
-```typescript
-import type { SimpleWebConfig } from 'simple-web23'
-import { Config } from 'simple-web23'
-```
-
-SimpleWeb 框架支持以下配置选项：
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|---------|------|
-| port | number | 2342 | 服务器监听端口 |
-| logLevel | 'debug' \| 'info' \| 'warn' \| 'error' | 'info' | 日志输出级别 |
-| displayLineLogLevel | 'debug' \| 'info' \| 'warn' \| 'error' | 'info' | 显示行号的日志级别 |
-| logDepth | number | 4 | 日志对象递归深度 |
-| requestLimitSize | string | '50mb' | 请求体大小限制 |
-| disableModuleCache | boolean | false | 是否禁用模块缓存 |
-| isProd | boolean | false | 是否为生产环境 |
-| workspacePath | string | \`${process.cwd()}/functions\` | 接口函数目录 |
-
-#### 使用配置项示例
-
-```typescript
-import { SimpleWeb, SimpleWebConfig } from 'simple-web23'
-
-const config: SimpleWebConfig = {
-    port: 3000,
-    logLevel: 'debug',
-    isProd: process.env.NODE_ENV === 'production',
-    requestLimitSize: '100mb'
-}
-
-const app = new SimpleWeb(config)
-app.start()
-```
-
-### 工具函数
-
-simple web 框架提供 `FunctionCache` `FunctionModule` `FunctionExecutor` 三个工具函数
-
-```typescript
-import { FunctionCache, FunctionModule, FunctionExecutor } from 'simple-web23'
-```
-
-使用 `FunctionCache` 可以获取当前所有的接口函数的原始代码缓存
-
-```typescript
-import type { FunctionContext } from 'simple-web23'
-export default async function (ctx: FunctionContext) {
-    const cache = FunctionCache.getAll()
-    console.log(cache)
-}
-```
-
-使用 `FunctionModule` 可以获取当前所有的接口函数模块
-
-```typescript
-import type { FunctionContext } from 'simple-web23'
-export default async function (ctx: FunctionContext) {
-    const modules = FunctionModule.getCache()
-    console.log(modules)
-}
-```
-
-## 更多示例
-
-大部分 web 开发中都需要用到 **数据库** **对象存储** 这些东西, 下面给出使用 mongo 数据库 和 S3 对象存储的示例。
-
-simple web 框架支持在接口函数目录外写一些 持久化的 client，例如 数据库 client，s3 对象存储 client 等和一些 corn job 等，推荐将这些 client 和 cron job 写在接口函数目录外。
-
-### 使用 mongo 数据库
-
-在项目根目录执行 `pnpm install mongodb` 安装 mongodb 客户端，在 `client` 目录下创建 `mongo.ts` 文件，写入 mongodb 客户端代码。
-
-```typescript
-import { MongoClient } from 'mongodb'
-
-// 生产环境切记将密码和用户 替换成从环境变量中获取，切记不要在代码中写死泄露密码
-// const username = process.env.MONGO_USERNAME
-// const password = process.env.MONGO_PASSWORD
-// const uri = `mongodb://${username}:${password}@test-mongodb.ns-1k9qk3v6.svc:27017`
-const uri = "mongodb://root:tf44dbrn@dbconn.sealosgzg.site:45222/?directConnection=true"
-
-
-
-// 创建 MongoDB 客户端实例
-export const client = new MongoClient(uri)
-```
-
-在 `functions` 目录下创建 `mongo-test.ts` 文件，写入 mongodb 测试代码。
-
-```typescript
-import { FunctionContext } from 'simple-web23'
-import { client } from '../client/mongo'
-
-export default async function (ctx: FunctionContext) {
-    const database = client.db('test')
-    const collection = database.collection('test')
-
-    // 创建测试数据
-    console.log('--- 创建测试数据 ---')
-    const insertResult = await collection.insertMany([
-        { name: '张三', age: 25, city: '北京' },
-        { name: '李四', age: 30, city: '上海' }
-    ])
-    console.log('插入数据结果:', insertResult)
-
-    // 查询所有数据
-    console.log('\n--- 查询所有数据 ---')
-    const allDocs = await collection.find({}).toArray()
-    console.log('所有数据:', allDocs)
-
-    // 查询单个数据
-    console.log('\n--- 查询单个数据 ---')
-    const oneDoc = await collection.findOne({ name: '张三' })
-    console.log('查询张三的数据:', oneDoc)
-
-    // 更新数据
-    console.log('\n--- 更新数据 ---')
-    const updateResult = await collection.updateOne(
-        { name: '张三' },
-        { $set: { age: 26, city: '深圳' } }
-    )
-    console.log('更新结果:', updateResult)
-
-    // 查看更新后的数据
-    const updatedDoc = await collection.findOne({ name: '张三' })
-    console.log('更新后的张三数据:', updatedDoc)
-
-    // 删除数据
-    console.log('\n--- 删除数据 ---')
-    const deleteResult = await collection.deleteOne({ name: '李四' })
-    console.log('删除结果:', deleteResult)
-
-    // 最终查询所有数据
-    console.log('\n--- 最终数据 ---')
-    const finalDocs = await collection.find({}).toArray()
-    console.log('最终所有数据:', finalDocs)
-
-    return { message: '测试完成' }
-}
-```
-
-```plain
-demo
-├── functions
-│   ├── hello.ts
-│   ├── mongo-test.ts
-├── client
-│   ├── mongo.ts
-├── index.ts
-├── package.json
-├── tsconfig.json
-├── nodemon.json
-```
-
-### 使用 S3 对象存储
-
-在项目根目录执行 `pnpm install @aws-sdk/client-s3` 安装 s3 客户端，在 `client` 目录下创建 `s3.ts` 文件，写入 s3 客户端代码。
-
-```typescript
-import { S3Client, ListObjectsV2Command, PutObjectCommand, _Object } from "@aws-sdk/client-s3"
-
-// 创建 S3 客户端
-// 生产环境切记将密码和用户 替换成从环境变量中获取，切记不要在代码中写死泄露密码
-// const accessKeyId = process.env.S3_ACCESS_KEY_ID
-// const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY
-
-const s3Client = new S3Client({
-    region: "cn-north-1", // 例如 "ap-northeast-1"
-    endpoint: "https://objectstorageapi.gzg.sealos.run", // 例如 "https://s3.amazonaws.com" 或自定义endpoint
-    credentials: {
-        accessKeyId: "xxxxxxxxxx",
-        secretAccessKey: "xxxxxxxxxx"
-    },
-    // 如果使用自定义endpoint（比如MinIO），可能需要以下配置
-    forcePathStyle: true, // 强制使用路径样式而不是虚拟主机样式
-})
-
-// 列出 bucket 中的文件
-async function listFiles(bucketName: string) {
-    try {
-        const command = new ListObjectsV2Command({
-            Bucket: bucketName,
-        })
-
-        const response = await s3Client.send(command)
-
-        // 打印文件列表
-        response.Contents?.forEach((file: _Object) => {
-            console.log(`文件名: ${file.Key}, 大小: ${file.Size} bytes`)
-        })
-
-        return response.Contents
-    } catch (error) {
-        console.error("列出文件失败:", error)
-        throw error
-    }
-}
-
-// 上传文件到 S3
-async function uploadFile(bucketName: string, key: string, fileContent: Buffer) {
-    try {
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: fileContent,
-        })
-
-        const response = await s3Client.send(command)
-        console.log("文件上传成功:", response)
-        return response
-    } catch (error) {
-        console.error("文件上传失败:", error)
-        throw error
-    }
-}
-
-export { listFiles, uploadFile }
-```
-
-在 `functions` 目录下创建 `s3-test.ts` 文件，写入 s3 测试代码。
-
-```typescript
-import { FunctionContext } from 'simple-web23'
-import { listFiles, uploadFile } from '../client/s3'
-
-
-
-export default async function (ctx: FunctionContext) {
-    const bucketName = '1k9qk3v6-test2'
-    const fileName = 'test.txt'
-    const fileContent = Buffer.from('Hello World')
-    await uploadFile(bucketName, fileName, fileContent)
-    await listFiles(bucketName)
-    return 'success'
-}
-```
-
-## 🎯 未来规划
-
-- [ ] 插件系统支持
-- [ ] 全局上下文定义
-- [ ] 生命周期钩子
-- [ ] Path 路由增强
-- [ ] OpenAPI 集成
-- [ ] 多语言支持 (Python/Go/Java)
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request。
+如需更详细的代码注释和扩展说明，请查阅 `/functions` 目录下各服务实现。 
