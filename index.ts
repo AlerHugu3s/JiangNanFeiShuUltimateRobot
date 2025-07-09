@@ -1,4 +1,5 @@
 import { MusicBot } from './functions/MusicBot';
+import { Logger } from './functions/Logger';
 
 async function main() {
   const musicBot = new MusicBot();
@@ -16,14 +17,14 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.log('用法:');
-    console.log('  pnpm start morning      # 发送早安推送');
-    console.log('  pnpm start noon         # 发送午安推送');
-    console.log('  pnpm start night        # 发送晚安推送');
-    console.log('  pnpm start holiday      # 发送节假日推送');
-    console.log('  pnpm start test-all     # 测试所有推送类型');
-    console.log('  pnpm start start        # 启动主循环（定时推送）');
-    console.log('  pnpm start clear-cache  # 清除所有缓存');
+    Logger.info('用法:');
+    Logger.info('  pnpm start morning      # 发送早安推送');
+    Logger.info('  pnpm start noon         # 发送午安推送');
+    Logger.info('  pnpm start night        # 发送晚安推送');
+    Logger.info('  pnpm start holiday      # 发送节假日推送');
+    Logger.info('  pnpm start test-all     # 测试所有推送类型');
+    Logger.info('  pnpm start start        # 启动主循环（定时推送）');
+    Logger.info('  pnpm start clear-cache  # 清除所有缓存');
     return;
   }
 
@@ -45,7 +46,7 @@ async function main() {
       await musicBot.testAll();
       break;
     case 'start':
-      console.log('启动主循环，按 Ctrl+C 停止...');
+      Logger.info('启动主循环，按 Ctrl+C 停止...');
       // 新增定时日志功能
       const logIntervalMinutes = 5;
       let lastLogTime = 0;
@@ -77,13 +78,13 @@ async function main() {
             const minute = Number(runTimes[0][1]);
             nextRun = new Date(tomorrow.getTime() + hour * 60 * 60 * 1000 + minute * 60 * 1000);
           }
-          console.log(`[定时提醒] 下次推送时间：${nextRun.toLocaleString()}`);
+          Logger.info(`[定时提醒] 下次推送时间：${nextRun.toLocaleString()}`);
           // 计算剩余时间
           const msLeft = nextRun.getTime() - now.getTime();
           const hours = Math.floor(msLeft / (1000 * 60 * 60));
           const minutes = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((msLeft % (1000 * 60)) / 1000);
-          console.log(`[定时提醒] 距离下次推送还有：${hours}小时${minutes}分${seconds}秒`);
+          Logger.info(`[定时提醒] 距离下次推送还有：${hours}小时${minutes}分${seconds}秒`);
           await new Promise(r => setTimeout(r, logIntervalMinutes * 60 * 1000));
         }
       }
@@ -98,39 +99,39 @@ async function main() {
         const cmd = (typeof input === 'string' ? input : input.toString()).trim();
         if (cmd === 'clear-cache') {
           await musicBot.clearCache();
-          console.log('所有缓存已清除。');
+          Logger.info('所有缓存已清除。');
         } else if (cmd.startsWith('push ')) {
           const type = cmd.split(' ')[1];
           if (['morning', 'noon', 'night', 'holiday'].includes(type)) {
             await musicBot.sendToFeishu(type, type === 'holiday');
-            console.log(`已手动推送 ${type}`);
+            Logger.info(`已手动推送 ${type}`);
           } else {
-            console.log('未知推送类型');
+            Logger.info('未知推送类型');
           }
         } else if (cmd === 'exit') {
-          console.log('即将退出...');
+          Logger.info('即将退出...');
           process.exit(0);
         } else if (cmd === 'help') {
-          console.log('可用指令：');
-          console.log('  help                # 查看所有可用指令');
-          console.log('  clear-cache         # 清除所有缓存');
-          console.log('  push morning        # 手动推送早安');
-          console.log('  push noon           # 手动推送午安');
-          console.log('  push night          # 手动推送晚安');
-          console.log('  push holiday        # 手动推送节假日');
-          console.log('  exit                # 退出主程序');
+          Logger.info('可用指令：');
+          Logger.info('  help                # 查看所有可用指令');
+          Logger.info('  clear-cache         # 清除所有缓存');
+          Logger.info('  push morning        # 手动推送早安');
+          Logger.info('  push noon           # 手动推送午安');
+          Logger.info('  push night          # 手动推送晚安');
+          Logger.info('  push holiday        # 手动推送节假日');
+          Logger.info('  exit                # 退出主程序');
         } else {
-          console.log('支持的命令：clear-cache, push morning/noon/night/holiday, exit');
+          Logger.info('支持的命令：clear-cache, push morning/noon/night/holiday, exit');
         }
       });
       break;
     case 'clear-cache':
       await musicBot.clearCache();
-      console.log('所有缓存已清除。');
+      Logger.info('所有缓存已清除。');
       break;
     default:
-      console.log('未知命令！可用命令：morning / noon / night / holiday / test-all / start / clear-cache');
+      Logger.info('未知命令！可用命令：morning / noon / night / holiday / test-all / start / clear-cache');
   }
 }
 
-main().catch(console.error);
+main().catch(err => Logger.error(err instanceof Error ? err.stack || err.message : String(err)));

@@ -3,6 +3,9 @@ import { NeteaseMusicService, Song } from './NeteaseMusicService';
 import { GreetingService } from './GreetingService';
 import { HistoryService } from './HistoryService';
 import { WebhookService } from './WebhookService';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Logger } from './Logger';
 
 export class MusicBot {
     private weatherService: WeatherService;
@@ -55,12 +58,14 @@ export class MusicBot {
 
     // 主推送方法：每个 webhook 独立推送
     public async sendToFeishu(timeType: string, isFridayNight = false): Promise<void> {
-        const now = new Date();
+        const now = new Date(); // 保留now声明，供后续逻辑使用
         const stack = new Error().stack;
-        console.log(`[日志追踪] sendToFeishu 被调用，时间: ${now.toISOString()}，类型: ${timeType}，isFridayNight: ${isFridayNight}`);
+        const logMsg = `[日志追踪] sendToFeishu 被调用，类型: ${timeType}，isFridayNight: ${isFridayNight}`;
+        Logger.info(logMsg);
         if (stack) {
             const stackLines = stack.split('\n').slice(1, 4).map(l => l.trim()).join(' | ');
-            console.log(`[日志追踪] 调用堆栈: ${stackLines}`);
+            const stackMsg = `[日志追踪] 调用堆栈: ${stackLines}`;
+            Logger.info(stackMsg);
         }
         await this.ensureAllPlaylistsCache();
         await this.ensureWeatherCache();
@@ -73,7 +78,7 @@ export class MusicBot {
             // 随机选歌
             const song = this.musicService.getRandomSong(history, cacheFile);
             if (!song) {
-                console.log(`[${webhook}] 所有歌单歌曲已全部推荐过，清空历史后重试。`);
+                Logger.info(`[${webhook}] 所有歌单歌曲已全部推荐过，清空历史后重试。`);
                 this.historyService.saveHistory(new Set());
                 continue;
             }
@@ -169,18 +174,18 @@ export class MusicBot {
                 card
             };
             // 控制台输出标准 JSON 便于调试
-            console.log(JSON.stringify(jsonMsg, null, 2));
+            Logger.info(JSON.stringify(jsonMsg, null, 2));
             // webhook 推送卡片
             await this.webhookService.sendToWebhook(webhook, payload);
         }
     }
 
     public async testAll(): Promise<void> {
-        const now = new Date();
-        console.log(`[日志追踪] testAll 被调用，时间: ${now.toISOString()}`);
+        const logMsg = `[日志追踪] testAll 被调用`;
+        Logger.info(logMsg);
         await this.ensureAllPlaylistsCache();
         await this.ensureWeatherCache();
-        console.log('开始测试所有推送类型...');
+        Logger.info('开始测试所有推送类型...');
         await this.sendToFeishu('morning');
         await this.sleep(2000);
         await this.sendToFeishu('noon');
@@ -188,26 +193,28 @@ export class MusicBot {
         await this.sendToFeishu('night');
         await this.sleep(2000);
         await this.sendToFeishu('night', true);
-        console.log('测试完成！');
+        Logger.info('测试完成！');
     }
 
     public async startMainLoop(): Promise<void> {
-        console.log(`[日志追踪] startMainLoop 启动，时间: ${new Date().toISOString()}`);
+        const logMsg = `[日志追踪] startMainLoop 启动`;
+        Logger.info(logMsg);
         const runTimes: Array<[number, number, string]> = [
             [10, 0, 'morning'],
             [13, 0, 'noon'],
             [19, 0, 'night']
         ];
         while (true) {
-            const now = new Date();
-            console.log(`[日志追踪] 主循环 tick，当前时间: ${now.toISOString()}`);
+            const now = new Date(); // 保留now声明，供后续逻辑使用
+            const tickMsg = `[日志追踪] 主循环 tick`;
+            Logger.info(tickMsg);
             // 周末跳过
             if (now.getDay() >= 6) {
                 const daysToMonday = 8 - now.getDay();
                 const nextMonday = new Date(now.getTime() + daysToMonday * 24 * 60 * 60 * 1000);
                 nextMonday.setHours(10, 0, 0, 0);
                 const sleepMs = nextMonday.getTime() - now.getTime();
-                console.log(`本周已结束，${Math.floor(sleepMs / (1000 * 60 * 60))}小时后下次推送。`);
+                Logger.info(`本周已结束，${Math.floor(sleepMs / (1000 * 60 * 60))}小时后下次推送。`);
                 await this.sleep(sleepMs);
                 continue;
             }
@@ -241,6 +248,7 @@ export class MusicBot {
         for (const file of cacheFiles) {
             fs.unlinkSync(`cache/${file}`);
         }
+        Logger.info('所有缓存已清除。');
     }
 
     private sleep(ms: number) {
