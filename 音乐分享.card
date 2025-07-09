@@ -1,0 +1,143 @@
+{
+    "name": "音乐分享",
+    "dsl": {
+        "schema": "2.0",
+        "config": {
+            "update_multi": true,
+            "style": {
+                "text_size": {
+                    "normal_v2": {
+                        "default": "normal",
+                        "pc": "normal",
+                        "mobile": "heading"
+                    }
+                }
+            }
+        },
+        "body": {
+            "direction": "vertical",
+            "padding": "12px 12px 12px 12px",
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "plain_text",
+                        "content": "为你推荐一首来自 ${playlist} 的歌曲",
+                        "text_size": "normal_v2",
+                        "text_align": "left",
+                        "text_color": "default"
+                    },
+                    "margin": "0px 0px 0px 0px"
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "plain_text",
+                        "content": "由 ${artist} 创作的 《${song}》 送给各位！",
+                        "text_size": "normal_v2",
+                        "text_align": "left",
+                        "text_color": "default"
+                    },
+                    "margin": "0px 0px 0px 0px"
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "plain_text",
+                        "content": "${weatherEmoji} ${weatherText}",
+                        "text_size": "normal_v2",
+                        "text_align": "left",
+                        "text_color": "default"
+                    },
+                    "margin": "0px 0px 0px 0px"
+                },
+                {
+                    "tag": "button",
+                    "text": {
+                        "tag": "plain_text",
+                        "content": "${song}"
+                    },
+                    "type": "default",
+                    "width": "fill",
+                    "size": "medium",
+                    "icon": {
+                        "tag": "standard_icon",
+                        "token": "link-copy_outlined"
+                    },
+                    "hover_tips": {
+                        "tag": "plain_text",
+                        "content": "前往网易云查看歌曲"
+                    },
+                    "behaviors": [
+                        {
+                            "type": "template_open_url",
+                            "multi_url": "${link}"
+                        }
+                    ],
+                    "margin": "0px 0px 0px 0px"
+                }
+            ]
+        },
+        "header": {
+            "title": {
+                "tag": "plain_text",
+                "content": "周末快乐！愿你放松心情，享受生活 🌈"
+            },
+            "subtitle": {
+                "tag": "plain_text",
+                "content": ""
+            },
+            "template": "blue",
+            "padding": "12px 12px 12px 12px"
+        }
+    },
+    "variables": [
+        {
+            "type": "url",
+            "apiName": "var_mcvddgck",
+            "name": "link",
+            "desc": "网易云链接",
+            "mockData": {
+                "pc_url": "",
+                "android_url": "",
+                "ios_url": "",
+                "url": "https://open.feishu.cn"
+            }
+        },
+        {
+            "type": "text",
+            "apiName": "var_mcvddgcy",
+            "name": "playlist",
+            "desc": "歌单",
+            "mockData": "AlerHugues喜欢的音乐"
+        },
+        {
+            "type": "text",
+            "apiName": "var_mcvddgdb",
+            "name": "artist",
+            "desc": "作者",
+            "mockData": "SOUL'd OUT"
+        },
+        {
+            "type": "text",
+            "apiName": "var_mcvddgdi",
+            "name": "song",
+            "desc": "歌曲名",
+            "mockData": "ウェカピポ"
+        },
+        {
+            "type": "text",
+            "apiName": "var_mcvddgdq",
+            "name": "weatherEmoji",
+            "desc": "天气emoji",
+            "mockData": "🌧️"
+        },
+        {
+            "type": "text",
+            "apiName": "var_mcvddgdy",
+            "name": "weatherText",
+            "desc": "天气",
+            "mockData": "明日天气：周边有零星小雨，气温 26-33°C"
+        }
+    ]
+}

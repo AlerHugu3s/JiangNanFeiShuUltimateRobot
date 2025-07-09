@@ -17,13 +17,12 @@ export class MusicBot {
     constructor(
         weatherApiKey = 'dedf75857d4f47f4a2973415250307',
         weatherCity = 'Shanghai',
-        neteaseApiBase = 'http://localhost:3000',
         greetingDir = 'greetings',
         historyFile = 'history.json',
         webhookPlaylistsFile = 'webhook_playlists.json'
     ) {
         this.weatherService = new WeatherService(weatherApiKey, weatherCity);
-        this.musicService = new NeteaseMusicService(neteaseApiBase);
+        this.musicService = new NeteaseMusicService();
         this.greetingService = new GreetingService(greetingDir);
         this.historyService = new HistoryService(historyFile);
         this.webhookService = new WebhookService(webhookPlaylistsFile);
@@ -103,8 +102,68 @@ export class MusicBot {
                     };
                 }
             }
-            // 以 { text: JSON字符串 } 格式发送
-            const payload = { text: JSON.stringify(jsonMsg, null, 2) };
+
+            // 组装美化后的飞书卡片消息体
+            const elements: any[] = [
+                {
+                    tag: "div",
+                    text: {
+                        tag: "lark_md",
+                        content: `**为你推荐一首来自 _${song.playlistName}_ 的歌曲**`
+                    }
+                },
+                {
+                    tag: "div",
+                    text: {
+                        tag: "lark_md",
+                        content: `> 由 **${song.artist}** 创作的《${song.name}》送给各位！`
+                    }
+                }
+            ];
+            if (jsonMsg.weather && (jsonMsg.weather.emoji || jsonMsg.weather.message)) {
+                elements.push({
+                    tag: "div",
+                    text: {
+                        tag: "lark_md",
+                        content: `${jsonMsg.weather.emoji || ''} ${jsonMsg.weather.message || ''}`
+                    }
+                });
+                elements.push({ tag: "hr" });
+            }
+            elements.push({
+                tag: "action",
+                actions: [
+                    {
+                        tag: "button",
+                        text: {
+                            tag: "plain_text",
+                            content: `🎧 ${song.name}`
+                        },
+                        url: `https://music.163.com/#/song?id=${song.id}`,
+                        type: "primary"
+                    }
+                ]
+            } as any);
+            const card = {
+                config: {
+                    wide_screen_mode: true
+                },
+                header: {
+                    title: {
+                        tag: "plain_text",
+                        content: greeting // 你可以在 greeting 里加 emoji
+                    },
+                    template: "blue"
+                },
+                elements: elements
+            };
+            const payload = {
+                msg_type: "interactive",
+                card
+            };
+            // 控制台输出标准 JSON 便于调试
+            console.log(JSON.stringify(jsonMsg, null, 2));
+            // webhook 推送卡片
             await this.webhookService.sendToWebhook(webhook, payload);
         }
     }

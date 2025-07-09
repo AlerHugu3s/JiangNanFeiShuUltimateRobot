@@ -1,5 +1,4 @@
-import axios from 'axios';
-import axiosRetry from 'axios-retry';
+import * as NeteaseCloudMusicApi from 'NeteaseCloudMusicApi';
 import * as fs from 'fs';
 
 export interface Song {
@@ -11,11 +10,7 @@ export interface Song {
 }
 
 export class NeteaseMusicService {
-    private apiBase: string;
-
-    constructor(apiBase: string) {
-        this.apiBase = apiBase;
-    }
+    constructor() { }
 
     // 刷新指定歌单缓存，缓存文件名自定义
     public async refreshPlaylistsCache(playlistIds: string[], cacheFile: string): Promise<Song[]> {
@@ -23,17 +18,18 @@ export class NeteaseMusicService {
         for (const pid of playlistIds) {
             try {
                 // 获取歌单基本信息
-                const detailUrl = `${this.apiBase}/playlist/detail?id=${pid}`;
-                const detailRes = await axios.get(detailUrl);
-                const playlist = detailRes.data.playlist || {};
-                const playlistName = playlist.name || '';
+                const detailRes = await NeteaseCloudMusicApi.playlist_detail({ id: pid });
+                const playlist = detailRes.body && detailRes.body.playlist ? detailRes.body.playlist as any : {};
+                let playlistName = '';
+                if (playlist && typeof playlist.name === 'string') {
+                    playlistName = playlist.name;
+                }
                 // 获取所有歌曲
                 let offset = 0;
                 const limit = 1000;
                 while (true) {
-                    const tracksUrl = `${this.apiBase}/playlist/track/all?id=${pid}&limit=${limit}&offset=${offset}`;
-                    const tracksRes = await axios.get(tracksUrl);
-                    const songs = tracksRes.data.songs || [];
+                    const tracksRes = await NeteaseCloudMusicApi.playlist_track_all({ id: pid, limit, offset });
+                    const songs = (tracksRes.body && Array.isArray(tracksRes.body.songs)) ? tracksRes.body.songs : [];
                     allSongs.push(...songs.map((song: any) => ({
                         name: song.name,
                         artist: song.ar?.[0]?.name || '未知',
@@ -74,9 +70,4 @@ export class NeteaseMusicService {
     private saveCache(songs: Song[], cacheFile: string) {
         fs.writeFileSync(cacheFile, JSON.stringify(songs, null, 2), 'utf-8');
     }
-}
-axiosRetry(axios, {
-    retries: 3, // 失败重试3次
-    retryDelay: (retryCount) => retryCount * 1000, // 每次重试间隔1秒
-    retryCondition: (error) => axiosRetry.isNetworkOrIdempotentRequestError(error), // 只对网络错误或幂等请求重试
-}); 
+} 

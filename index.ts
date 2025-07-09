@@ -1,54 +1,17 @@
 import { MusicBot } from './functions/MusicBot';
-import axios from 'axios';
-import { spawn } from 'child_process';
-
-async function waitForApiReady(url: string, timeout = 15000) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      await axios.get(url);
-      return true;
-    } catch {
-      await new Promise(res => setTimeout(res, 1000));
-    }
-  }
-  return false;
-}
 
 async function main() {
-  // 检查网易云音乐 API 服务是否可用
-  let apiReady = false;
-  try {
-    await axios.get('http://localhost:3000/');
-    apiReady = true;
-  } catch (e) {
-    console.log('检测到网易云音乐 API 服务（http://localhost:3000）未启动，尝试自动启动...');
-    // 自动启动 NeteaseCloudMusicApi
-    const child = spawn('node', ['app.js'], {
-      cwd: 'F:/NeteaseCloudMusicApi',
-      detached: true,
-      stdio: 'ignore',
-    });
-    child.unref();
-    // 等待服务可用
-    apiReady = await waitForApiReady('http://localhost:3000/', 20000);
-  }
-  if (!apiReady) {
-    console.error('无法启动或连接网易云音乐 API 服务（http://localhost:3000）！请手动检查。');
-    process.exit(1);
-  }
-
   const musicBot = new MusicBot();
 
   // 启动时自动运行 test-all
-  try {
-    console.log('自动测试所有推送类型...');
-    await musicBot.testAll();
-    console.log('自动测试完成。');
-  } catch (e) {
-    console.error('自动测试过程中发生错误：', e);
-    console.error('请检查 webhook 配置、网络连接、歌单内容等。已知问题如历史已满会自动清空重试。');
-  }
+  // try {
+  //   console.log('自动测试所有推送类型...');
+  //   await musicBot.testAll();
+  //   console.log('自动测试完成。');
+  // } catch (e) {
+  //   console.error('自动测试过程中发生错误：', e);
+  //   console.error('请检查 webhook 配置、网络连接、歌单内容等。已知问题如历史已满会自动清空重试。');
+  // }
 
   const args = process.argv.slice(2);
 
