@@ -55,6 +55,13 @@ export class MusicBot {
 
     // 主推送方法：每个 webhook 独立推送
     public async sendToFeishu(timeType: string, isFridayNight = false): Promise<void> {
+        const now = new Date();
+        const stack = new Error().stack;
+        console.log(`[日志追踪] sendToFeishu 被调用，时间: ${now.toISOString()}，类型: ${timeType}，isFridayNight: ${isFridayNight}`);
+        if (stack) {
+            const stackLines = stack.split('\n').slice(1, 4).map(l => l.trim()).join(' | ');
+            console.log(`[日志追踪] 调用堆栈: ${stackLines}`);
+        }
         await this.ensureAllPlaylistsCache();
         await this.ensureWeatherCache();
 
@@ -169,6 +176,8 @@ export class MusicBot {
     }
 
     public async testAll(): Promise<void> {
+        const now = new Date();
+        console.log(`[日志追踪] testAll 被调用，时间: ${now.toISOString()}`);
         await this.ensureAllPlaylistsCache();
         await this.ensureWeatherCache();
         console.log('开始测试所有推送类型...');
@@ -183,6 +192,7 @@ export class MusicBot {
     }
 
     public async startMainLoop(): Promise<void> {
+        console.log(`[日志追踪] startMainLoop 启动，时间: ${new Date().toISOString()}`);
         const runTimes: Array<[number, number, string]> = [
             [10, 0, 'morning'],
             [13, 0, 'noon'],
@@ -190,6 +200,7 @@ export class MusicBot {
         ];
         while (true) {
             const now = new Date();
+            console.log(`[日志追踪] 主循环 tick，当前时间: ${now.toISOString()}`);
             // 周末跳过
             if (now.getDay() >= 6) {
                 const daysToMonday = 8 - now.getDay();

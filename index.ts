@@ -92,6 +92,37 @@ async function main() {
         musicBot.startMainLoop(),
         logLoop()
       ]);
+      // 支持主循环期间实时接收命令
+      process.stdin.setEncoding('utf-8');
+      process.stdin.on('data', async (input) => {
+        const cmd = (typeof input === 'string' ? input : input.toString()).trim();
+        if (cmd === 'clear-cache') {
+          await musicBot.clearCache();
+          console.log('所有缓存已清除。');
+        } else if (cmd.startsWith('push ')) {
+          const type = cmd.split(' ')[1];
+          if (['morning', 'noon', 'night', 'holiday'].includes(type)) {
+            await musicBot.sendToFeishu(type, type === 'holiday');
+            console.log(`已手动推送 ${type}`);
+          } else {
+            console.log('未知推送类型');
+          }
+        } else if (cmd === 'exit') {
+          console.log('即将退出...');
+          process.exit(0);
+        } else if (cmd === 'help') {
+          console.log('可用指令：');
+          console.log('  help                # 查看所有可用指令');
+          console.log('  clear-cache         # 清除所有缓存');
+          console.log('  push morning        # 手动推送早安');
+          console.log('  push noon           # 手动推送午安');
+          console.log('  push night          # 手动推送晚安');
+          console.log('  push holiday        # 手动推送节假日');
+          console.log('  exit                # 退出主程序');
+        } else {
+          console.log('支持的命令：clear-cache, push morning/noon/night/holiday, exit');
+        }
+      });
       break;
     case 'clear-cache':
       await musicBot.clearCache();
