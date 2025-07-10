@@ -3,6 +3,8 @@ import { Logger } from './functions/Logger';
 
 async function main() {
   const musicBot = new MusicBot();
+  // 启动时先检查webhook配置文件是否存在且有效
+  musicBot['webhookService'].loadWebhookPlaylists();
 
   // 启动时自动运行 test-all
   // try {
