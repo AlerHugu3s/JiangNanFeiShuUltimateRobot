@@ -108,3 +108,5 @@ Thumbs.db
 history.json
 weather_cache.json
 playlists_cache_*.json
+webhook_playlists.json
+/config/webhook_playlists.json
