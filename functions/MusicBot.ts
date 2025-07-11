@@ -142,19 +142,39 @@ export class MusicBot {
                 });
                 elements.push({ tag: "hr" });
             }
+            // 构建按钮数组
+            const actions: any[] = [
+                {
+                    tag: "button",
+                    text: {
+                        tag: "plain_text",
+                        content: `🎧 ${song.name}`
+                    },
+                    url: `https://music.163.com/#/song?id=${song.id}`,
+                    type: "primary"
+                }
+            ];
+
+            // 为晚安推送和节假日推送添加打卡按钮
+            Logger.info(`[调试] timeType: ${timeType}, isFridayNight: ${isFridayNight}`);
+            if (timeType === 'night' || isFridayNight) {
+                Logger.info(`[调试] 添加打卡按钮`);
+                actions.push({
+                    tag: "button",
+                    text: {
+                        tag: "lark_md",
+                        content: "🕙 打卡"
+                    },
+                    url: "https://applink.feishu.cn/T8KT9eIznl76",
+                    type: "primary"
+                });
+            } else {
+                Logger.info(`[调试] 不添加打卡按钮`);
+            }
+
             elements.push({
                 tag: "action",
-                actions: [
-                    {
-                        tag: "button",
-                        text: {
-                            tag: "plain_text",
-                            content: `🎧 ${song.name}`
-                        },
-                        url: `https://music.163.com/#/song?id=${song.id}`,
-                        type: "primary"
-                    }
-                ]
+                actions: actions
             } as any);
             const card = {
                 config: {
