@@ -7,6 +7,12 @@ export class Logger {
     private static logDir = path.join(__dirname, '../cache');
     private static logFile = path.join(Logger.logDir, 'logs.log');
 
+    // 静态初始化，确保日志文件存在
+    private static _init = (() => {
+        if (!fs.existsSync(Logger.logDir)) fs.mkdirSync(Logger.logDir, { recursive: true });
+        if (!fs.existsSync(Logger.logFile)) fs.writeFileSync(Logger.logFile, '', 'utf-8');
+    })();
+
     private static format(level: LogLevel, content: string): string {
         const now = new Date();
         // 本地时区时间字符串
@@ -25,7 +31,7 @@ export class Logger {
     }
 
     private static appendLog(level: LogLevel, content: string) {
-        if (!fs.existsSync(Logger.logDir)) fs.mkdirSync(Logger.logDir, { recursive: true });
+        // 这里不再重复创建，只写入
         const msg = Logger.format(level, content);
         fs.appendFileSync(Logger.logFile, msg + '\n', 'utf-8');
         console.log(msg);

@@ -75,8 +75,8 @@ export class MusicBot {
             const cacheFile = this.getPlaylistCacheFile(webhook);
             // 读取历史
             const history = this.historyService.loadHistory();
-            // 随机选歌
-            const song = this.musicService.getRandomSong(history, cacheFile);
+            // 使用公平的随机选歌算法
+            const song = this.musicService.getFairRandomSong(history, cacheFile);
             if (!song) {
                 Logger.info(`[${webhook}] 所有歌单歌曲已全部推荐过，清空历史后重试。`);
                 this.historyService.saveHistory(new Set());
@@ -86,12 +86,12 @@ export class MusicBot {
             history.add(song.id);
             this.historyService.saveHistory(history);
 
-            // 祝福语
+            // 使用改进的祝福语随机算法
             let greeting = '';
             if (isFridayNight) {
-                greeting = this.greetingService.readRandomLine('holiday.txt');
+                greeting = this.greetingService.readWeightedRandomLine('holiday.txt', 'holiday');
             } else {
-                greeting = this.greetingService.readRandomLine(`${timeType}.txt`);
+                greeting = this.greetingService.readWeightedRandomLine(`${timeType}.txt`, timeType);
             }
 
             // 组装 JSON 对象
@@ -248,6 +248,8 @@ export class MusicBot {
         for (const file of cacheFiles) {
             fs.unlinkSync(`cache/${file}`);
         }
+        // 清除祝福语历史记录
+        this.greetingService.clearHistory();
         Logger.info('所有缓存已清除。');
     }
 
